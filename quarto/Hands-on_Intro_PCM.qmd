@@ -17,31 +17,48 @@ format:
     code-fold: true
     toc: true
     number-sections: true
-bibliography: lab_1_PCM.bib
+bibliography: ../references_PCM.bib
 link-citations: true
 csl: ../apa-single-spaced.csl
 ---
 
 ::: callout-note
-In this lab, you will learn basic tools in R for visualizing phylogenies, testing models of character evolution, performing phylogenetic correction of a regression model, and test for the phylogenetic signal of continuous characters. This lab is based in part on one designed by [Luke Harmon](https://scholar.google.com/citations?hl=en&user=nsA3IsgAAAAJ&view_op=list_works) for a workshop that he and others ran at Ilha Bela, Brazil; the original can be seen [here](http://lukejharmon.github.io/ilhabela/instruction/2015/07/03/PGLS/) There are many other useful labs in comparative analysis from that [workshop](http://lukejharmon.github.io/ilhabela/) that you can peruse at your leisure.
+In this exercise, you will learn basic tools in R for visualizing phylogenies, testing models of character evolution, performing phylogenetic correction of a regression model, and test for the phylogenetic signal of continuous characters. This lab is based in part on one designed by [Luke Harmon](https://scholar.google.com/citations?hl=en&user=nsA3IsgAAAAJ&view_op=list_works) for a workshop that he and others ran at Ilha Bela, Brazil; the original can be seen [here](http://lukejharmon.github.io/ilhabela/instruction/2015/07/03/PGLS/) There are many other useful labs in comparative analysis from that [workshop](http://lukejharmon.github.io/ilhabela/) that you can peruse at your leisure.
 :::
 
 You will need two datasets, that will be provided for you:
 
-1.  A data.frame with species traits -- **furnariides_traits.csv**
+1.  A data.frame with species and mean spectra values -- **NEON_airborne_spectra_CLEAN_NAS.csv**
 
-2.  A phylogenetic tree -- **furnariides_tree.nex**
+2.  A phylogenetic tree -- **phylo_ALL_NEON_S3.nex**
 
-The clade we will work on today is the **Furnariides (Aves: Passeriformes)**, also known as the largest continental endemic radiation [@pinto-ledezma_drivers_2019]. We will use the phylogenetic tree reconstructed by Jesús. The trait data correspond to several morphological measurements of birds from **AVONET** [@tobias_avonet_2022].
+# Clone the repository
+
+You can clone the repository using Git. Mac and Linux users have Git installed natively in their computers, but if you are a Windows user, you might need to install Git first (https://git-scm.com/download/win)
+
+To clone the repository, you just need (**example for Mac**) to follow the next steps:
+
+1. Open terminal 
+
+2. Type "pwd" without quotes. This means Print Working Directory. 
+
+3. Type "cd" without quotes followed by the folder you want to work on, for example: cd Documents
+
+4. Type the following command 
+
+4.1. git clone https://github.com/jesusNPL/MLM_intro.git
+
+This command will clone the full repository in the folder you selected. That's it!
 
 # Set up your data and your working directory
 
 For this lab, you will need to have a set of R packages to do this lab. Install the following packages:
 
 ```{r}
-#| eval: false
+#| eval: true
 # Package vector names 
-packages <- c("tidyverse", "ape", "geiger", "nlme", "phytools", "rr2") 
+packages <- c("tidyverse", "ape", "geiger", "ggnewscale", 
+              "phytools", "neonUtilities", "devtools") 
 
 ```
 
@@ -54,7 +71,7 @@ You can use the function **install.packages()** to install the packages.
 If you don't want to install the packages one by one, you can use the next command.
 
 ```{r}
-#| eval: false
+#| eval: true
 # Install packages not yet installed 
 # get packages already installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -68,15 +85,28 @@ if (any(installed_packages == FALSE)) {
 
 This command, will, first, check if you already the packages installed, then if a package is not installed in your computer, will install it.
 
+We will also need the R package {V.PhyloMaker} to obtain a phylogenetic tree for our plant species. Note that this package is not located in CRAN, so we will install the package directly from the [author's github](https://github.com/jinyizju/V.PhyloMaker).
+
+```{r}
+#| eval: true
+
+if ( ! ("V.PhyloMaker" %in% installed.packages())) {remotes::install_github("jinyizju/V.PhyloMaker")}
+
+```
+
+
 Load installed packages:
 
 ```{r}
+#| eval: true
+
 library(tidyverse)
 library(ape)
 library(geiger)
 library(nlme)
 library(phytools)
-library(rr2)
+library(neonUtilities)
+library(V.PhyloMaker)
 ```
 
 Set up a working directory. Tell R that this is the directory you will be using, and read in your data:
@@ -89,6 +119,7 @@ You can use the function **getwd()** to get the current working directory.
 
 ```{r}
 #| eval: false
+
 setwd("path/for/your/directory")
 
 ```
@@ -99,17 +130,320 @@ setwd("path/for/your/directory")
 You can use the function **dir.create()** to get create a series of folders within your working directory. For example, if you run **dir.create("Output")** it will create an empty folder--named Output--within your working directory. This folder then can be used to store the results from the lab.
 :::
 
+# Part 1 - Obtain a phylogenetic tree
+
+## Prepare data
+
+### Download plant inventories data from NEON
+
+We will download data of plant inventories directly from NEON and to do that we will use the **R** package {**neonUtilities**} and the function '*loadByProduct*'. Before proceed let's take a look at the core information required in this function. To do that you just can type **?loadByProduct** in your console and the documentation for this function will appear in the Help window of RStudio.
+
+The core information we need to inform in the '*loadByProduct*' function are:
+
+1. __dpID__ = The identifier of the NEON data product to pull, in the form DPL.PRNUM.REV, e.g. DP1.10023.001.
+
+2. __site__ = Either the string 'all', meaning all available sites, or a character vector of 4-letter NEON site codes, e.g. c('ONAQ','RMNP'). Defaults to all.
+
+3. __package__ = Either 'basic' or 'expanded', indicating which data package to download. Defaults to basic.
+
+As you can see, the __dpID__ and __site__ correspond to the kind of data we want to download and the site to the location where the data were collected, respectively. We can open the NEON website to find the information required for downloading the data for [**plant presence and percent cover**](https://data.neonscience.org/data-products/DP1.10058.001/RELEASE-2021/). Also, you can look at the map of [NEON sites](https://data.neonscience.org/data-products/explore) to see the distribution of NEON sites across The United States.
+
+For this practice we will use the next information: __dpID__ = __"DP1.10058.001"__ and __site__ = __c("HARV")__ that correspond to __plant presence and percent cover__ and the site: __HARV__ (Harvard Forest & Quabbin Watershed NEON, MA). Note that you can download data only for all sites but for the sake of getting more practice in data management in R we will download the full data of plant community data for one site (you can download data for more sites if you prefer).
+
+```{r}
+#| eval: false
+
+# Set global option to NOT convert all character variables to factors
+options(stringsAsFactors = FALSE)
+
+NEON_data <- loadByProduct(dpID = "DP1.10058.001", 
+                        site = "HARV", 
+                        package = "expanded", 
+                        check.size = TRUE)
+
+# type "y" (with no quotes) in your console to start downloading the data from NEON
+
+```
+
+Let's inspect the downloaded data.
+
+```{r}
+#| eval: true
+
+load("../data/NEON/RawData_NEON_HARV.RData")
+
+names(NEON_data)
+
+#View(NEON_data$div_10m2Data100m2Data)
+
+#View(NEON_data$div_1m2Data)
+
+```
+
+Save the raw data in your hard drive - this is a common practice that allow reproducibility and also save you a lot of time.
+
+```{r}
+#| eval: false
+
+dir.create("../data/NEON")
+
+save(NEON_data, file = "../data/NEON/RawData_NEON_HARV.RData")
+
+```
+
+The data of abundance of plants correspond to the object __"div_1m2Data"__, thus let's isolate that data from the rawdata. 
+
+```{r}
+#| eval: true
+
+sel <- NEON_data$div_1m2Data %>% 
+  select(namedLocation, domainID, siteID, plotType, plotID, subplotID, endDate, 
+         taxonID, taxonRank, family, scientificName, nativeStatusCode, 
+         percentCover, heightPlantSpecies)
+
+unique(sel$namedLocation)
+unique(sel$siteID)
+unique(sel$endDate)
+
+```
+
+The isolated data is a data.frame of 86,813 rows and 14 columns. Some information is not required so let's clean the data a little bit and select information for only one site and a single period of time.
+
+```{r}
+#| eval: true
+
+sel <- sel %>% 
+  drop_na(scientificName) %>% # Removing NAs in the column of species
+  mutate(Date = endDate) %>% 
+  separate(endDate, sep = "-", 
+           into = c("Year", "Month", "Day"))
+
+unique(sel$Year)
+unique(sel$siteID)
+
+```
+
+Select the site __HARV__ and the year __2022__.
+
+```{r}
+#| eval: true
+
+HARV <- sel %>% 
+  filter(Year == 2022)
+
+unique(HARV$Year)
+unique(HARV$siteID)
+
+head(HARV, 10)
+
+```
+
+## Check taxonomy
+
+The data corresponding to NEON site HARV for the 2022 contains 1220 rows or observations and 17 columns or variables. If we look at the data, specifically to the column __scientificName__ we can see that the taxonomy used in NEON correspond to the taxonomy used by the [USDA](https://plants.sc.egov.usda.gov/classification.html), however this taxonomy is not necessarily used by scholars (🤔😵🫣). We generally rely for example on the taxonomy of the APG [Angiosperm Phylogeny Group](http://www.mobot.org/MOBOT/research/APweb/) for Angiosperms and WCSP [World Checklist of Conifers](http://wcsp.science.kew.org/prepareChecklist.do?checklist=selected_families%40%40080210320211453826) for Gymnosperms. More recently the initiative [**Plants of the World**](https://powo.science.kew.org) was launched and as today is the most reliable source to check the taxonomic names of plant species. 
+
+```{r}
+#| eval: true
+
+glimpse(HARV)
+
+```
+
+In any case, we need to standardize the species names in order to proceed with the exercise.
+
+To standardize the species names, you can use the steps described [HERE](https://github.com/jesusNPL/CDR_phyfunc/blob/main/R/0.CDR-LTR_taxonomic_resolution.R). 
+
+However, for simplicity we will use the **[Taxonomic Name Resolution Service (TNRS)](https://tnrs.biendata.org)** tool, that basically is a web interface that used the **Plants of the World** as a base source.
+
+The only thing we need to do is to copy the scientific names and paste on the TNRS tool.
+
+```{r}
+#| eval: true
+
+# vector with scientific names
+spp <- HARV %>% 
+  select(scientificName) %>% 
+  distinct()
+
+# print the species names
+head(spp, 10)
+
+# save names and open with excel or numbers
+write_csv(spp, 
+          file = "../data/NEON/HARV_spp_names_2022.csv")
+
+```
+
+The next step is to open the file **HARV_spp_names_2022.csv**. Then, copy the species names and paste them into the TRNL website. Next, click on the **submit** tab and then click on the **Download Data** tab. A small window will pop out (see image below), and click in **DOWNLOAD**.
+
+![TRNL](../Screenshot_TRNL.png)
+
+A **.CSV** file named **tnrs_result.csv** will be downloaded to your **Downloads** folder. Please copy the file and paste it into the folder **data/NEON** of this tutorial.
+
+Now we will upload the standardized species names through the TRNL tool and match these names with the ones in the species composition dataset or **HARV data**.
+
+```{r}
+#| eval: true
+spp_check <- read_csv("../data/NEON/tnrs_result.csv")
+
+head(spp_check, 10)
+
+```
+
+Select the necessary information and combine it with the HARV data.
+
+```{r}
+#| eval: true
+
+taxonomy <- spp_check %>% 
+  select(Name_submitted, Accepted_family, Genus_matched, 
+         Specific_epithet_matched, Accepted_species) %>% 
+  mutate(Specific_epithet_matched = if_else(is.na(Specific_epithet_matched), 
+                                            "sp.", Specific_epithet_matched)) %>% 
+  mutate(species = paste(Genus_matched, Specific_epithet_matched)) %>% 
+  rename(genus = Genus_matched) %>% 
+  drop_na(Accepted_family, genus) %>% 
+  distinct(species, .keep_all = TRUE)
+
+taxonomy$Name_submitted[4] <- "Tsuga canadensis (L.) Carrière"
+taxonomy$Name_submitted[16] <- "Ilex mucronata (L.) Powell, Savolainen & Andrews"
+#taxonomy$Name_submitted[55] <- "Lysimachia terrestris (L.) Britton, Sterns & Poggenb."
+taxonomy$Name_submitted[77] <- "Lycopodium hickeyi W.H. Wagner, Beitel & Moran"
+
+```
+
+Now let's combine the new taxonomic information with our NEON data.
+
+```{r}
+#| eval: true
+
+HARV_data <- right_join(x = HARV, 
+                       y = taxonomy, 
+                       by = c("scientificName" = "Name_submitted"))
+
+```
+
+We can select some specific columns that we will use from now on.
+
+```{r}
+#| eval: true
+
+HARV_data <- HARV_data %>% 
+  select(siteID, plotID, subplotID, Accepted_family, genus, species, percentCover) %>% 
+  drop_na(species)
+
+head(HARV_data)
+
+```
+
+## Get phylogenetic hypothesis
+
+Alright, until here we have downloaded, cleaned and prepared plant community data for the NEON site HARV. The next step is to prepare the phylogeny for those communities or a community level phylogeny. To do that we will use the most up to date phylogeny of vascular plants [Constructing a broadly inclusive seed plant phylogeny](https://bsapubs.onlinelibrary.wiley.com/doi/full/10.1002/ajb2.1019) and the R package {**V.PhyloMaker**}.
+
+### Get taxonomic table
+
+```{r}
+#| eval: true
+
+# Prepare the taxonomy data to extract the phylogeny
+sppPhylo <- HARV_data %>% 
+  distinct(Accepted_family, genus, species) %>% # identify unique values
+  select(species, genus, family = Accepted_family)  # select columns
+  
+head(sppPhylo, 10)
+
+```
+
+### Get phylogeny 
+
+Prepare the phylogeny and plot it.
+
+```{r}
+#| eval: true
+
+result <- V.PhyloMaker::phylo.maker(sppPhylo, 
+                                    scenarios = "S3") # this will take some time.
+
+```
+
+Explore the results
+
+See which species were added to the megaphylogeny
+
+```{r}
+#| eval: true
+
+glimpse(result$species.list)
+
+```
+
+Explore the phylogeny
+
+```{r}
+#| eval: true
+
+str(result$scenario.3)
+
+```
+
+Double check the results 
+
+```{r}
+#| eval: true
+
+phylo <- multi2di(result$scenario.3)
+
+# Check if our phylogeny is ultrametric
+is.ultrametric(phylo)
+
+# Check is our phylogeny is bifurcated 
+is.binary.phylo(phylo)
+
+plot(phylo, show.tip.label = FALSE)
+
+axisPhylo()
+
+```
+
+Save results 
+
+```{r}
+#| eval: false
+
+dir.create("../output/Phylogeny")
+
+# Save taxonomy
+write_csv(result$species.list, 
+          file = "../output/Phylogeny/HARV_taxonomic_constraint.csv")
+
+# Save phylogeny
+write.nexus(result$scenario.3, 
+            file = "../output/Phylogeny/HARV_phylogeny.nex")
+
+```
+
+Clean environment
+
+```{r}
+#| eval: true
+
+rm(list = ls())
+
+```
+
+# Part 2 - Intro to phylogenies and the comparative method
+
 Load the data. Instead of reading files from the computer we will pull the required data directly from the internet.
 
 ```{r}
+#| eval: true
 
 ## Trait data
-furnaData <- read_csv("https://raw.githubusercontent.com/jesusNPL/BiodiversityScience/master/Spring2024/Lab_1_Intro_PCM/Data/furnariides_traits.csv") %>% 
-  column_to_rownames("Sciname") %>%   # we are using the column "Sciname" as rownames
-  drop_na(Range.Size)
+neonData <- read_csv("../data/NEON_airborne_spectra_CLEAN_NAS.csv") %>% 
+  column_to_rownames("species")
 
 ## Phylogenetic data
-furnaTree <- read.nexus("https://raw.githubusercontent.com/jesusNPL/BiodiversityScience/master/Spring2024/Lab_1_Intro_PCM/Data/furnariides_tree.nex")
+neonTree <- read.nexus("../data/phylo_ALL_NEON_S3.nex")
 
 ```
 
@@ -119,104 +453,86 @@ furnaTree <- read.nexus("https://raw.githubusercontent.com/jesusNPL/Biodiversity
 This operator is, maybe, the most used operator from the {dplyr} package and is used to perform a sequence of operations on a data frame. In other words, the pipe operator simply feeds the results of one operation into the next operation below it.
 :::
 
-Another option is downloading the data and storing it on your computer. You can use the following lines to do that. These lines will do: 1) check your working directory, 2) download the lab data in a zip file, and 3) unzip the downloaded data.
-
-```{r}
-#| eval: false 
-
-main.dir <- getwd() # Will get the working directory
-
-# create a Data folder
-dir.create("Data")
-
-# url to download the data in your computer
-urls <- "https://www.dropbox.com/scl/fi/3vr6yi0y32c36u5rgqlyp/Lab_1.zip?rlkey=s136jvkwsi6979hb5tlosxqh5&dl=1" # Name of the file to download
-
-# download the file in a specific folder
-download.file(url = urls, file.path(main.dir, "Data/Lab_1.zip"), mode = "wb") 
-
-# Unzip the downloaded files
-unzip("Data/Lab_1.zip")
-
-```
-
-::: {.callout-caution collapse="true"}
-## Double-check your working directory
-
-Previous lines of code will only work if you have set your **working directory (WD)** and only if you have the folder **Data** within the WD. You can check the Intro-R lab for more details.
-:::
-
 OK. You should be ready to go.
 
-Let's inspect the data first, to do that we will use the function **"glimpse()"** of the R package **{dplyr}**
+Let's inspect the data first, you can use the function **"glimpse()"** of the R package **{dplyr}**
 
 ```{r}
+#| eval: true
 
-glimpse(furnaData)
+neonData[1:10, 1:5]
 
 ```
 
 Let's check if our trait data contain the same species as the phylogeny
 
 ```{r}
+#| eval: true
 
-tmp <- name.check(phy = furnaTree, data = furnaData)
+tmp <- name.check(phy = neonTree, data = neonData)
 
 # print the results
-tmp
+head(tmp$tree_not_data, 10)
 
 ```
 
-It indicates that the species *Philydor novaesi* is not present in the trait data, so let's drop this species from the phylogeny. To do that we will use the function **drop.tip()** of the package **{ape}**
+It indicates that over 3500 species are not present in the spectra data, so let's drop these species from the phylogeny. To do that we will use the function **drop.tip()** of the package **{ape}**
 
 ```{r}
+#| eval: true
 
-furnaTree <- drop.tip(phy = furnaTree, tip = tmp$tree_not_data)
+neonTree <- drop.tip(phy = neonTree, tip = tmp$tree_not_data)
 
 ```
 
 We can double check if our data match after dropping the missing species
 
 ```{r}
+#| eval: true
 
-name.check(phy = furnaTree, data = furnaData)
+name.check(phy = neonTree, data = neonData)
 
 ```
 
 Now it seems that we are ready to go!
 
-# Working with trees
+## Working with trees
 
 Let’s start by looking at the phylogeny of these birds and learning a bit about how to work with trees in R.
 
 *What does your tree look like?*
 
 ```{r}
-#| eval: false
+#| eval: true
 
-plot(furnaTree)
+plot(ladderize(neonTree))
+
+axisPhylo()
 
 ```
 
 Whoa. That's ugly. Let's clean it up.
 
 ```{r}
-#| eval: false
+#| eval: true
 
-plot.phylo(furnaTree, 
+plot.phylo(ladderize(neonTree), 
            no.margin = TRUE, 
            cex = 0.5)
+
+axisPhylo()
 
 ```
 
 Better. You can mess around with tree plotting functions in **plot.phylo()** as much as you'd like. Try this for example:
 
 ```{r}
+#| eval: true
 
-plot.phylo(furnaTree, 
+plot.phylo(neonTree, 
            type = "fan", 
            no.margin = TRUE, 
-           cex = 0.3)
+           cex = 0.5)
 
 ```
 
@@ -225,45 +541,45 @@ Much much better.
 It may be useful to understand how trees are encoded in R. Typing in just the name of the tree file like this:
 
 ```{r}
-#| eval: false
+#| eval: true
 
-furnaTree
+neonTree
 
 ```
 
-will give you basic information about the phylogeny: the number of tips and nodes; what the tips are called; whether the tree is rooted; and if it has branch lengths.
+that will give you basic information about the phylogeny: the number of tips and nodes; what the tips are called; whether the tree is rooted; and if it has branch lengths.
 
 ```{r}
-#| eval: false
+#| eval: true
 
-str(furnaTree)
+str(neonTree)
 
 ```
 
 will tell you more about tree structure. Trees consist of tips connected by edges (AKA branches)
 
 ```{r}
-#| eval: false
+#| eval: true
 
-furnaTree$tip.label
+neonTree$tip.label
 
 ```
 
 gives you a list of all your terminal taxa, which are by default numbered 1-n, where n is the number of taxa.
 
 ```{r}
-#| eval: false
+#| eval: true
 
-furnaTree$Nnode
+neonTree$Nnode
 
 ```
 
 gives you the number of nodes. This is a fully bifurcating rooted tree, so it has 1 fewer node than the number of taxa.
 
 ```{r}
-#| eval: false
+#| eval: true
 
-furnaTree$edge
+head(neonTree$edge, 10)
 
 ```
 
@@ -272,67 +588,47 @@ This tells you the beginning and ending node for all edges.
 Put that all together with the following lines
 
 ```{r}
-#| eval: false
+#| eval: true
 
-plot.phylo(furnaTree, 
+plot.phylo(neonTree, 
            type = "fan", 
            no.margin = TRUE, 
-           cex = 0.7, 
+           cex = 0.5, 
            label.offset = 0.1, 
-           show.tip.label = FALSE)
+           show.tip.label = TRUE)
 
-nodelabels(cex = 0.5)
+nodelabels(cex = 0.3)
 
-tiplabels(cex = 0.5)
+#tiplabels(cex = 0.5)
 
 ```
 
 There are many ways to manipulate trees in R using **{ape}**, **{Phytools}**, and other packages. This just gives you a bare-bones introduction.
 
-# Working with a data matrix and testing hypotheses in a phylogenetically informed way
+## Working with a data matrix and testing hypotheses in a phylogenetically informed way
 
-Let's ask some questions using the trait data that were measured for these birds. First, explore the data in the "furnaData" matrix. Here are some options for visualizing data matrices:
+Let's ask some questions using the spectra data that were extracted from NEON. First, explore the data in the "neonData" matrix. Here are some options for visualizing data matrices:
 
 ```{r}
-#| eval: false
+#| eval: true
 
-furnaData %>% 
-  head() # this will show you the first few rows of your data matrix and its header
+#neonData # this will show you the first few rows of your data matrix and its header
 
-furnaData %>% 
+neonData %>% 
   dimnames() # this will show you the row and column headers for your matrix
 
-furnaData %>% 
-  View() # this will let you visualize the entire matrix
+#neonData %>% 
+ # View() # this will let you visualize the entire matrix
 
 ```
 
-After looking at the data, please answer the next questions.
-
-*What variables were measured for each of these species of Furnariides?*
-
-*How many species of Furnariides were used?*
-
-*Was the same number as in the phylogeny?*
-
-This datasets are big, let's isolate a specific clade **(Family = Furnariidae)** and work the rest of the lab with that clade.
+Hyperspectral data is composed of hundreds of bands let's isolate a single band to work so we can work with it easily:
 
 ```{r}
+#| eval: true
 
-furnariidaeData <- furnaData %>% 
-  filter(Family3 == "Furnariidae")
-
-furnariidaeTree <- drop.tip(phy = furnaTree, 
-                            tip = setdiff(furnaTree$tip.label, rownames(furnariidaeData)))
-
-```
-
-**Hand-wing index** is one of your variables found in the trait dataset. Let's isolate it so we can work with it easily:
-
-```{r}
-
-hwi <- furnariidaeData[, "Hand-Wing.Index"] 
-names(hwi) <- rownames(furnariidaeData) 
+wl402 <- neonData[, "402"] 
+names(wl402) <- rownames(neonData) 
 # data vectors have to be labelled with tip names for the associated tree. 
 # This is how to do that. 
 
@@ -345,26 +641,21 @@ It is good practice to check the distribution of your data before doing downstre
 :::
 
 ```{r}
-hist(hwi)
+#| eval: true
+
+hist(wl402)
+
 ```
 
-What about if we log scale the HWI?
-
-```{r}
-hist(log(hwi))
-```
-
-*Does it look different/similar?*
-
-In the lecture, we talked about one model of character evolution, called a **Brownian Motion** model. This model assumes that a trait evolves from a starting state (**z0**) according to a random walk with the variance specified by the rate parameter $\sigma^{2}$ (**sigma-squared**). In short, Brownian motion describes a process in which tip states are modeled under the assumption of a multivariate normal distribution. On a phylogeny, the multivariate mean of tip states is equal to the root state estimate, and variance accumulates linearly through time.
+When we work with comparative data we start exploring different sets of evolutionary models. The most common is the model of character evolution, called **Brownian Motion** model. This model assumes that a trait evolves from a starting state (**z0**) according to a random walk with the variance specified by the rate parameter $\sigma^{2}$ (**sigma-squared**). In short, Brownian motion describes a process in which tip states are modeled under the assumption of a multivariate normal distribution. On a phylogeny, the multivariate mean of tip states is equal to the root state estimate, and variance accumulates linearly through time.
 
 *What does Brownian Motion evolution of hand-wing index in Furnariides look like?*
 
 ```{r}
-#| eval: false
+#| eval: true
 
-brownianModel <- fitContinuous(phy = furnariidaeTree, 
-                               dat = log(hwi))
+brownianModel <- fitContinuous(phy = neonTree, 
+                               dat = wl402)
 
 brownianModel # this will show you the fit statistics and parameter values
 
@@ -375,13 +666,13 @@ Here, you can see the estimates for ancestral state (z0), and the rate parameter
 In addition to assessing model fit, we can use the Brownian Motion model to reconstruct ancestral states of a character on a tree. To visualize what BM evolution of this trait looks like on a tree. The *contMap()* command in {phytools} estimates the ancestral states and plots them on a tree.
 
 ```{r}
-#| eval: false
+#| eval: true
 
 ## Calculate number of trait shifts
-obj <- contMap(furnariidaeTree, 
-        log(hwi), 
+obj <- contMap(neonTree, 
+        wl402, 
         fsize = 0.1, 
-        lwd = 2, 
+        lwd = 1.5, 
         type = "fan", 
         plot = FALSE)
 
@@ -392,172 +683,45 @@ obj <- setMap(obj,
 # Plot the results
 plot(obj, 
      fsize = c(0.1, 0.8), 
-     leg.txt = "Hand-Wing Index")
+     leg.txt = "Wavelength 402")
 
 ```
 
-*Describe the evolution of Hand-wing index on this tree. How many times have extremely high and extremely low Hand-wing index evolved on this tree?*
-
-*What does this say about our ability to test hypotheses about the evolution of Hand-wing index?*
-
-Let’s go ahead and test some hypotheses. **Range Size** is another trait in your data matrix. Let’s assess whether there is a correlation between HWI and range size? We will extract the column "Range Size" from the data matrix and assign it species names, just as we did for "HWI" above.
-
-```{r}
-#| eval: false
-
-rangeSize <- furnariidaeData[, "Range.Size"]
-
-names(rangeSize) <- rownames(furnariidaeData)
-
-```
-
-Let's see if range size follow a normal distribution
-
-```{r}
-#| eval: false
-
-hist(log(rangeSize))
-
-```
-
-Let’s look at a plot of range size as a function of Hand-wing index.
-
-```{r}
-#| eval: false
-
-furnaData %>% 
-  drop_na(Range.Size) %>% 
-  ggplot(aes(x = log(`Hand-Wing.Index`), y = log(Range.Size))) + 
-  geom_point(alpha = 0.5, color = "darkgray", size = 3) +  
-  labs(x = "log(Hand-Wing Index)", y = "log(Range Size)")
-
-```
-
-Hm. looks promising. *How would you describe the relationship between these two variables?*
-
-*Why did we log scale range size?*
-
-Let's be more quantitative in describing that relationship with a linear model.
-
-```{r}
-#| eval: false
-
-lm_hwi_rangesize <- lm(log(rangeSize) ~ log(hwi)) 
-
-summary(lm_hwi_rangesize)
-
-```
-
-```{r}
-
-furnaData %>% 
-  drop_na(Range.Size) %>% 
-  ggplot(aes(x = log(`Hand-Wing.Index`), y = log(Range.Size))) + 
-  geom_point(alpha = 0.5, color = "darkgray") + 
-  labs(x = "log(Hand-Wing Index)", y = "log(Range Size)") + 
-  geom_smooth(method = "lm")
-
-```
-
-The coefficients table from the *summary()* command shows the slope and intercept for the linear model describing **range size** as a function of **Hand-wing index**. Each line shows the estimated coefficient (Estimate), the standard error (Std. Error) of that estimate, as well as a t-statistic and associated p-value, testing whether those parameters are equal to 0. The Multiple R-squared is an estimate of how much variance in the response variable can be explained by the predictor variable.
-
-*Write the linear model for this relationship. Are the parameters significantly different from 0?*
-
-*What is the R\^2 value for this data?*
-
-*How do you feel about that?*
-
-## Phylogenetic regression (PGLS)
-
-Nice. But, we have not considered the fact that these birds are related to each other, in fact, all this birds are monophyletic--i.e., the clade includes an ancestral taxon and all of its descendants. As such, they may share their hand-wing index and range size simply due to the fact that their ancestors had large HWI and range size or the reverse. In other words, we need to account for non-independence of residuals due to phylogeny. One way to do that is to use phylogenetic-generalized-least-squares regression (PGLS).
-
-```{r}
-#| eval: false
-
-pglsModel <- gls(log(rangeSize) ~ log(hwi), 
-                 correlation = corBrownian(phy = furnariidaeTree, 
-                                           form=~names(rangeSize)), 
-                 method = "ML")
-
-pglsModel
-
-```
-
-Let's break this command down. This command infers a linear model for Range Size as a function of HWI (gls(rangeSize \~ hwi), but it specifies existing correlation structure in the data (correlation =) as the covariance of these traits assuming a Brownian motion model (corBrowinan()) based on the Furnariides tree (phy = furnariidaeTree) and a correctly ordered list of taxon names (form=\~names(rangeSize)). The model is fit using maximum likelihood (method = "ML"). To see the results:
-
-```{r}
-#| eval: false
-
-summary(pglsModel)
-
-coef(pglsModel)
-
-# R2lik is based on the likelihood of fitted models and therefore reflects the amount of information that the models contain.
-
-#And R2lik is most appropriate to assess the importance of different components within the same model applied to the same data, because it is most closely associated with statistical significance tests.
-
-R2_lik(mod = pglsModel)
-
-```
-
-```{r}
-#| eval: false
-
-furnaData %>% 
-  drop_na(Range.Size) %>% 
-  ggplot(aes(x = log(`Hand-Wing.Index`), y = log(Range.Size))) + 
-  geom_point(alpha = 0.5, color = "darkgray") + 
-  labs(x = "Hand-Wing Index", y = "log(Range Size)") + 
-  #geom_smooth(method = "lm") + 
-  geom_abline(intercept = coef(pglsModel)[1], slope = coef(pglsModel)[2], 
-              color = "red", linewidth = 1.5)
-
-# will plot the pgls regression line on your biplot.
-```
-
-*Write the linear model for this relationship. Are the parameters significantly different from 0?*
-
-*What is the R\^2 value for this data? (use the likelihood-based R\^2 value)*
-
-*How do you feel about that?*
-
-*Compare results from the PGLS analysis with those that you got from the regular linear model you ran earlier.*
-
-# Model Fitting
+## Model Fitting
 
 Brownian Motion is only one model of evolution for a continuous variable. Another model is the **Ornstein-Uhlenbeck (OU)** model, which allows the trait mean to evolve towards a new state (theta), with a selective force (alpha). These two new parameters, plus the starting state (z0) and the rate of evolution (sigsq) parameters from the BM model, make for a 4-parameter model. The **Early Burst (EB)** model allows the rate of evolution to change across the tree, where the early rate of evolution is high and declines over time (presumably as niches are filled during an adaptive radiation. The rate of evolution changes exponentially over time and is specified under the model r\[t\] = r\[0\] x exp(a x t), where r\[0\] is the initial rate, a is the rate change parameter, and t is time. The maximum bound is set to -0.000001, representing a decelerating rate of evolution. The minimum bound is set to $log(10^{-5})$/depth of the tree.
 
 Let’s evaluate the relative fit of these three models to the Hand-wing index trait.
 
-## Brownian Motion (BM)
+### Brownian Motion (BM)
 
 ```{r}
-#| eval: false
+#| eval: true
 
-brownianModel <- fitContinuous(phy = furnariidaeTree, # phylogeny
-                               dat = hwi, # trait 
+brownianModel <- fitContinuous(phy = neonTree, 
+                               dat = wl402, # trait 
                                model = "BM") # evolutionary model
 
 ```
 
-## Ornstein-Uhlenbeck (OU)
+### Ornstein-Uhlenbeck (OU)
 
 ```{r}
-#| eval: false
+#| eval: true
 
-OUModel <- fitContinuous(phy = furnariidaeTree, 
-                         dat = hwi, 
+OUModel <- fitContinuous(phy = neonTree, 
+                               dat = wl402, 
                          model = "OU")
 
 ```
 
-## Early Burst (EB)
+### Early Burst (EB)
 
 ```{r}
-#| eval: false
+#| eval: true
 
-EBModel <- fitContinuous(phy = furnariidaeTree, 
-                         dat = hwi, 
+EBModel <- fitContinuous(phy = neonTree, 
+                         dat = wl402, 
                          model = "EB")
 
 ```
@@ -565,7 +729,7 @@ EBModel <- fitContinuous(phy = furnariidaeTree,
 And recover the parameter values and fit estimates.
 
 ```{r}
-#| eval: false
+#| eval: true
 
 brownianModel
 
@@ -575,10 +739,11 @@ EBModel
 
 ```
 
+
 Compare all models and select the best fitting model. To to that, we will use AIC model comporison approach based on weights. 
 
 ```{r}
-#| eval: false
+#| eval: true
 
 # Vector of models
 mods <- c(brownianModel$opt$aicc, OUModel$opt$aicc, EBModel$opt$aicc)
@@ -590,112 +755,211 @@ aicw(mods)
 
 ```
 
-*Make a table with the AIC and lnL values for each model. Which model provides the best fit for Hand-wing index?*
-
-*Now, add the results for a model fitting analysis of the range size trait to this table.*
-
-So, we were wrong. An OU model fits HWI better (and you should be able to explain how we know that). Unfortunately, a PGLS analysis with an OU model specified is currently computationally difficult. The best we can do is report the results from our model fitting analysis, and realize that the parameters from BM might not be the best fit.
-
-However, we can still test our hypothesis that species with large HWI also present large range size, and account for phylogeny when we do. First, we should compare the uncorrected linear model of range size as a function of HWI vs the PGLS that uses the covariance structure of the residuals under a Brownian Motion model.
+According to the model comparison using AIC, the model that best fits the data is the OU model. The OU model also shows a slightly higher lnL value compared to the BM and EB models of evolution.
 
 ```{r}
-#| eval: false
+#| eval: true
 
-furnaData %>% 
-  drop_na(Range.Size) %>% 
-  ggplot(aes(x = log(`Hand-Wing.Index`), y = log(Range.Size))) + 
-  geom_point(alpha = 0.5, color = "darkgray") + 
-  labs(x = "log(Hand-Wing Index)", y = "log(Range Size)") + 
-  geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) + # OLS slope
-  geom_abline(intercept = coef(pglsModel)[1], # PGLS slope
-              slope = coef(pglsModel)[2], 
-              color = "red", linewidth = 1.5)
+library(knitr)
+
+aic_wl402 <- aicw(mods) 
+names(aic_wl402)[1] <- "AIC"
+
+aic_wl402$lnL <- c(brownianModel$opt$lnL, OUModel$opt$lnL, EBModel$opt$lnL)
+
+kable(aic_wl402)
 
 ```
 
-You might want to know if these regressions really differ in their ability to predict range size from HWI. Asked in another way, are the slopes from these two regressions significantly different from each other? You need to know that a 95% confidence interval for the slope parameter is $\beta$ (the slope) plus/minus 1.96 standard errors (this is derived from a normal distribution). To calculate your 95% confidence intervals:
-
-```{r}
-#| eval: false
-
-rshwi.sum <- summary(lm_hwi_rangesize)
-
-#for the uncorrected linear model
-rshwi.sum$coef[2, 1] + c(-1.96, 1.96)*rshwi.sum$coef[2, 2]
-
-#for Brownian Motion, the 95% CI
-coef(pglsModel)[2] + c(-1.96, 1.96)*sqrt(pglsModel$varBeta[2, 2])
-
-```
-
-*Did phylogenetic correction make a difference in this case?*
-
-*What do you conclude about the evolution of range size as a function of hand-wing index?*
-
-# Phylogenetic signal
+## Phylogenetic signal
 
 Phylogenetic signal is the tendency of related species to resemble each other more than species drawn at random from the same tree.
 
-## Blomberg's K
+### Blomberg's K
 
 Blomberg’s K compares the variance of **PICs** to what we would expect under a Brownian motion (BM) model of evolution. **K = 1** means that close relatives resemble each other as much as we should expect under BM. **K \< 1** that there is less **phylogenetic signal** than expected under BM and **K \> 1** means that there is more. In addition, a significant p-value returned from a randomization test tells us that the phylogenetic signal is significant, in other words, close relatives are more similar than random pairs of taxa in the dataset.
 
 ```{r}
-#| eval: false
+#| eval: true
 
 # Run Blomber's K
-K_hwi <- phylosig(tree = furnariidaeTree, # Phylogeny
-                  x = hwi, # trait
+K_wl402 <- phylosig(tree = neonTree, # Phylogeny
+                  x = wl402, # trait
                   method = "K", # method
                   test = TRUE)
 
 # Print results
-print(K_hwi)
-
-# Plot results
-plot(K_hwi)
+print(K_wl402)
 
 ```
 
-## Pagel's Lambda
+```{r}
+#| eval: true
+
+# Plot results
+plot(K_wl402)
+
+```
+
+### Pagel's Lambda
 
 Pagel’s $\lambda$ is a tree transformation that stretches the tip branches relative to internal branches, making the tree more and more like a complete polytomy of a star phylogeny. If $\lambda = 0$ there is no phylogenetic signal, while $\lambda = 1$ correspond to BM and $0 < \lambda < 1$ in between.
 
 ```{r}
-#| eval: false
+#| eval: true
 
 # Run Pagel's Lambda
-LB_hwi <- phylosig(tree = furnaTree, 
-                  x = hwi, 
+LB_wl402 <- phylosig(tree = neonTree, # Phylogeny
+                  x = wl402, # trait
                   method = "lambda", 
                   test = TRUE)
 
 # Print the results
-print(LB_hwi)
+print(LB_wl402)
 
 # Plot thre results
-plot(LB_hwi)
+plot(LB_wl402)
 
 ```
 
-*Describe the results of phylogenetic signal. Does Hand-wing index present phylogenetic signal?*
+Wavelength 402 presents a low phylogenetic signal according to both metrics. Pagel's $\lambda$ = 0.27. Blomberg's K = 0.05 suggests that wavelength 402 presents phylogenetic signal but not as expected under the BM model of evolution. **Importantly**, both metrics deviate from the white noise null model.
 
-*What about Range Size?*
+## Phylogenetic signal for all wavelengths
 
-# The challenge
+Double check the match between the spectra data and the phylogeny
 
-Until now, we have analyzed several metrics based on phylogenies using the family Furnariidae. But, in order to better understand how our perception may (or may not) change when analyzing other clades and to gain more experience using R, the challenge for this lab is:
+```{r}
+#| eval: true
 
-1.  First option -- repeat the process but using a difference clade. For example, the Infraorder Furnariides is composed of six families ("Conopophagidae", "Dendrocolaptidae" "Formicariidae", "Furnariidae", "Rhinocryptidae", "Thamnophilidae"), you just need to select a family different from Furnariidae.
+### Check info
+setdiff(neonTree$tip.label, rownames(neonData))
 
-2.  Second option -- You can stick with the Family Furnariidae, but you must need to change the traits. For example, you can use **Mass** and **Wing.Length**
+### Assign rownames to column
+neonData <- neonData %>% 
+  rownames_to_column("species")
 
-In either case, you need to answer all of the questions in the tutorial and return the lab report.
+```
 
-::: callout-tip
-## function filter from the package {dplyr}
+Now we will use a wrapper function to run multiple wavelenghts, but for the sake of sanity we will just run a sample of 10.
 
-You can use the following code to isolate the Family **Thamnophilidae**:
+```{r}
+#| eval: true
 
-thamnophilidaeData \<- furnaData %\>% filter(Family3 == "Thamnophilidae")
-:::
+### Run Blomberg's K 
+### Load wrapper functions
+source("https://raw.githubusercontent.com/jesusNPL/SpecEvolution/main/R/wrappers.R")
+
+# run only 10 bands
+NEON_HS_PhyloSig <- demon_K(spectra = neonData, # spectra in data.frame
+                            tree = neonTree, # phylogeny
+                            nSIM = 1000, # number of simulations
+                            nBands = 10) # number of bands
+
+
+```
+
+Explore the results
+
+```{r}
+#| eval: true
+
+glimpse(NEON_HS_PhyloSig)
+
+```
+
+To finish this hands-on we can plot the spectra and Blomberg's K values. To do that we will upload the phylogenetic signal estimated using the entire dataset.
+
+```{r}
+#| eval: true
+
+## Transform the long format
+NEON_HS_long <- neonData %>% 
+  pivot_longer(!species, 
+               names_to = "wavelength", 
+               values_to = "reflectance") 
+
+## Load phylogenetic signal
+NEON_HS_PhyloSig <- read_csv("../output/NEON_K_phylosig_CLEAN.csv")
+
+```
+
+Plot the results
+
+```{r}
+#| eval: true
+
+### Plot mean species and Blomberg's K values
+library(ggnewscale)
+
+p_ps_K <- NEON_HS_long %>% 
+  ggplot(aes(x = as.numeric(wavelength), 
+             y = reflectance, 
+             colour = factor(species)
+  )) +
+  geom_line(linewidth = 0.5, alpha = 0.5, show.legend = FALSE) + 
+  scale_colour_viridis_d(option = "turbo", direction = -1) + 
+  # add a new scale color
+  new_scale_color() + 
+  # plot phylogenetic signal 
+  geom_point(aes(x = as.numeric(WL_num), 
+                 y = extra_y, 
+                 color = species, 
+                 size = `Blomberg's K`), # Pval_cat = species
+             data = NEON_HS_PhyloSig , 
+             inherit.aes = FALSE) + 
+  scale_color_manual(name = "P-value", 
+                     labels = c("< 0.05", "> 0.05"), 
+                     values = c("no_diff" = "black", "diff" = "red")) + 
+  guides(color = guide_legend(override.aes = list(size = 5))) + 
+  xlab("Wavelength (nm)") + 
+  scale_y_continuous(
+    # Features of the first axis
+    name = "Reflectance",
+    # Add a second axis and specify its features
+    # sec.axis = sec_axis(trans = ~.*1, name = "Blomberg's K")
+  ) + 
+  annotate("rect", 
+           xmin = 400, xmax = 700, # Visible
+           ymin = -Inf, ymax = Inf,  fill = "grey2", alpha = 0.1) + 
+  annotate("text", x = 559:560, y = 0.2, label = "VIS", size  = 7) + 
+  annotate("rect",
+           xmin = 800, xmax = 1340, # NIR
+           ymin = -Inf, ymax = Inf,  fill = "grey2", alpha = 0.1) + 
+  annotate("text", x = 1070:1071, y = 0.2, label = "NIR", size  = 7) + 
+  annotate("rect",
+           xmin = 1445, xmax = 1790, # SWIR 1
+           ymin = -Inf, ymax = Inf,  fill = "grey2", alpha = 0.1) + 
+  annotate("text", x = 1620:1621, y = 0.2, label = "SWIR1", size  = 7) + 
+  annotate("rect",
+           xmin = 1955, xmax = 2400, # SWIR 2 
+           ymin = -Inf, ymax = Inf,  fill = "grey2", alpha = 0.1) +  
+  annotate("text", x = 2170:2171, y = 0.2, label = "SWIR2", size  = 7) + 
+  theme_minimal() + 
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 18), 
+    legend.title = element_text(size = 20), 
+    axis.text = element_text(size = 17, colour = "black"),
+    axis.title = element_text(size = 20), 
+    plot.title = element_text(size = 20, vjust = -12, hjust = 0.05),
+    plot.subtitle = element_text(size = 20, vjust = -10, hjust = 0.05)
+  )
+
+p_ps_K
+
+```
+
+Save the figure in our output folder
+
+```{r}
+#| eval: true
+
+### Save results
+pdf(file = "../output/Fig_NEON_HS_phyloSignal.pdf", 
+    height = 7, width = 10)
+
+p_ps_K
+
+dev.off()
+
+```

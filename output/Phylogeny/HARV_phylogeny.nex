@@ -1,0 +1,285 @@
+#NEXUS
+[R-package APE, Mon Jun  3 19:49:28 2024]
+
+BEGIN TAXA;
+	DIMENSIONS NTAX = 136;
+	TAXLABELS
+		Bidens_frondosa
+		Eurybia_divaricata
+		Symphyotrichum_lanceolatum
+		Solidago_rugosa
+		Prenanthes_sp.
+		Aralia_nudicaulis
+		Hydrocotyle_americana
+		Viburnum_acerifolium
+		Viburnum_nudum
+		Ilex_verticillata
+		Ilex_mucronata
+		Melampyrum_lineare
+		Veronica_officinalis
+		Fraxinus_americana
+		Galium_asprellum
+		Galium_tinctorium
+		Galium_triflorum
+		Mitchella_repens
+		Rhododendron_periclymenoides
+		Kalmia_latifolia
+		Kalmia_angustifolia
+		Epigaea_repens
+		Vaccinium_sp.
+		Vaccinium_angustifolium
+		Vaccinium_pallidum
+		Vaccinium_corymbosum
+		Gaylussacia_baccata
+		Gaultheria_procumbens
+		Lyonia_ligustrina
+		Pyrola_elliptica
+		Chimaphila_maculata
+		Monotropa_uniflora
+		Lysimachia_terrestris
+		Lysimachia_punctata
+		Lysimachia_ciliata
+		Lysimachia_quadrifolia
+		Trientalis_borealis
+		Impatiens_capensis
+		Nyssa_sylvatica
+		Polygonum_arifolium
+		Amphicarpaea_bracteata
+		Rubus_pubescens
+		Rubus_sp.
+		Rubus_hispidus
+		Rubus_flagellaris
+		Rubus_idaeus
+		Spiraea_tomentosa
+		Sorbus_americana
+		Amelanchier_laevis
+		Prunus_virginiana
+		Prunus_serotina
+		Frangula_alnus
+		Carpinus_caroliniana
+		Corylus_cornuta
+		Betula_sp.
+		Betula_populifolia
+		Betula_papyrifera
+		Betula_alleghaniensis
+		Betula_lenta
+		Carya_glabra
+		Carya_ovata
+		Quercus_alba
+		Quercus_rubra
+		Quercus_velutina
+		Castanea_dentata
+		Fagus_grandifolia
+		Viola_sp.
+		Viola_labradorica
+		Oxalis_stricta
+		Celastrus_orbiculatus
+		Acer_sp.
+		Acer_nigrum
+		Acer_saccharum
+		Acer_rubrum
+		Toxicodendron_radicans
+		Toxicodendron_vernix
+		Circaea_alpina
+		Geranium_maculatum
+		Vitis_labrusca
+		Parthenocissus_quinquefolia
+		Tiarella_cordifolia
+		Hamamelis_virginiana
+		Clematis_virginiana
+		Anemone_quinquefolia
+		Hepatica_nobilis
+		Coptis_trifolia
+		Berberis_thunbergii
+		Goodyera_tesselata
+		Cypripedium_acaule
+		Polygonatum_pubescens
+		Maianthemum_trifolium
+		Maianthemum_canadense
+		Phragmites_australis
+		Poa_alsodes
+		Elymus_virginicus
+		Glyceria_striata
+		Oryzopsis_asperifolia
+		Brachyelytrum_erectum
+		Brachyelytrum_aristosum
+		Carex_lacustris
+		Carex_atlantica
+		Carex_sp.
+		Carex_swanii
+		Carex_intumescens
+		Carex_pensylvanica
+		Carex_blanda
+		Carex_debilis
+		Streptopus_lanceolatus
+		Clintonia_borealis
+		Medeola_virginiana
+		Uvularia_sessilifolia
+		Trillium_undulatum
+		Arisaema_triphyllum
+		Pinus_resinosa
+		Pinus_strobus
+		Picea_rubens
+		Tsuga_canadensis
+		Dryopteris_sp.
+		Dryopteris_carthusiana
+		Dryopteris_intermedia
+		Polystichum_acrostichoides
+		Onoclea_sensibilis
+		Deparia_acrostichoides
+		Athyrium_filix-femina
+		Thelypteris_simulata
+		Thelypteris_palustris
+		Thelypteris_noveboracensis
+		Dennstaedtia_punctilobula
+		Pteridium_aquilinum
+		Osmunda_cinnamomea
+		Osmunda_claytoniana
+		Botrychium_lanceolatum
+		Lycopodium_sp.
+		Lycopodium_hickeyi
+		Lycopodium_obscurum
+		Lycopodium_clavatum
+	;
+END;
+BEGIN TREES;
+	TRANSLATE
+		1	Bidens_frondosa,
+		2	Eurybia_divaricata,
+		3	Symphyotrichum_lanceolatum,
+		4	Solidago_rugosa,
+		5	Prenanthes_sp.,
+		6	Aralia_nudicaulis,
+		7	Hydrocotyle_americana,
+		8	Viburnum_acerifolium,
+		9	Viburnum_nudum,
+		10	Ilex_verticillata,
+		11	Ilex_mucronata,
+		12	Melampyrum_lineare,
+		13	Veronica_officinalis,
+		14	Fraxinus_americana,
+		15	Galium_asprellum,
+		16	Galium_tinctorium,
+		17	Galium_triflorum,
+		18	Mitchella_repens,
+		19	Rhododendron_periclymenoides,
+		20	Kalmia_latifolia,
+		21	Kalmia_angustifolia,
+		22	Epigaea_repens,
+		23	Vaccinium_sp.,
+		24	Vaccinium_angustifolium,
+		25	Vaccinium_pallidum,
+		26	Vaccinium_corymbosum,
+		27	Gaylussacia_baccata,
+		28	Gaultheria_procumbens,
+		29	Lyonia_ligustrina,
+		30	Pyrola_elliptica,
+		31	Chimaphila_maculata,
+		32	Monotropa_uniflora,
+		33	Lysimachia_terrestris,
+		34	Lysimachia_punctata,
+		35	Lysimachia_ciliata,
+		36	Lysimachia_quadrifolia,
+		37	Trientalis_borealis,
+		38	Impatiens_capensis,
+		39	Nyssa_sylvatica,
+		40	Polygonum_arifolium,
+		41	Amphicarpaea_bracteata,
+		42	Rubus_pubescens,
+		43	Rubus_sp.,
+		44	Rubus_hispidus,
+		45	Rubus_flagellaris,
+		46	Rubus_idaeus,
+		47	Spiraea_tomentosa,
+		48	Sorbus_americana,
+		49	Amelanchier_laevis,
+		50	Prunus_virginiana,
+		51	Prunus_serotina,
+		52	Frangula_alnus,
+		53	Carpinus_caroliniana,
+		54	Corylus_cornuta,
+		55	Betula_sp.,
+		56	Betula_populifolia,
+		57	Betula_papyrifera,
+		58	Betula_alleghaniensis,
+		59	Betula_lenta,
+		60	Carya_glabra,
+		61	Carya_ovata,
+		62	Quercus_alba,
+		63	Quercus_rubra,
+		64	Quercus_velutina,
+		65	Castanea_dentata,
+		66	Fagus_grandifolia,
+		67	Viola_sp.,
+		68	Viola_labradorica,
+		69	Oxalis_stricta,
+		70	Celastrus_orbiculatus,
+		71	Acer_sp.,
+		72	Acer_nigrum,
+		73	Acer_saccharum,
+		74	Acer_rubrum,
+		75	Toxicodendron_radicans,
+		76	Toxicodendron_vernix,
+		77	Circaea_alpina,
+		78	Geranium_maculatum,
+		79	Vitis_labrusca,
+		80	Parthenocissus_quinquefolia,
+		81	Tiarella_cordifolia,
+		82	Hamamelis_virginiana,
+		83	Clematis_virginiana,
+		84	Anemone_quinquefolia,
+		85	Hepatica_nobilis,
+		86	Coptis_trifolia,
+		87	Berberis_thunbergii,
+		88	Goodyera_tesselata,
+		89	Cypripedium_acaule,
+		90	Polygonatum_pubescens,
+		91	Maianthemum_trifolium,
+		92	Maianthemum_canadense,
+		93	Phragmites_australis,
+		94	Poa_alsodes,
+		95	Elymus_virginicus,
+		96	Glyceria_striata,
+		97	Oryzopsis_asperifolia,
+		98	Brachyelytrum_erectum,
+		99	Brachyelytrum_aristosum,
+		100	Carex_lacustris,
+		101	Carex_atlantica,
+		102	Carex_sp.,
+		103	Carex_swanii,
+		104	Carex_intumescens,
+		105	Carex_pensylvanica,
+		106	Carex_blanda,
+		107	Carex_debilis,
+		108	Streptopus_lanceolatus,
+		109	Clintonia_borealis,
+		110	Medeola_virginiana,
+		111	Uvularia_sessilifolia,
+		112	Trillium_undulatum,
+		113	Arisaema_triphyllum,
+		114	Pinus_resinosa,
+		115	Pinus_strobus,
+		116	Picea_rubens,
+		117	Tsuga_canadensis,
+		118	Dryopteris_sp.,
+		119	Dryopteris_carthusiana,
+		120	Dryopteris_intermedia,
+		121	Polystichum_acrostichoides,
+		122	Onoclea_sensibilis,
+		123	Deparia_acrostichoides,
+		124	Athyrium_filix-femina,
+		125	Thelypteris_simulata,
+		126	Thelypteris_palustris,
+		127	Thelypteris_noveboracensis,
+		128	Dennstaedtia_punctilobula,
+		129	Pteridium_aquilinum,
+		130	Osmunda_cinnamomea,
+		131	Osmunda_claytoniana,
+		132	Botrychium_lanceolatum,
+		133	Lycopodium_sp.,
+		134	Lycopodium_hickeyi,
+		135	Lycopodium_obscurum,
+		136	Lycopodium_clavatum
+	;
+	TREE * UNTITLED = [&R] ((((((((((((((1:22.98946,((2:2.088731,3:2.088731):1.510489,4:3.59922):19.39024):7.684679,5:30.674139):63.056073,((6:39.744574,7:39.744574):45.896081,(8:14.931916,9:14.931916):70.708739)mrcaott1673ott2128:8.089557)mrcaott320ott1673:8.962629,(10:43.189173,11:43.189173):59.503668)campanulids:4.04857,(((12:52.932761,13:52.932762):18.087847,14:71.020609):18.730459,((15:6.40221,16:6.402211,17:6.402211):18.412525,18:24.814736):64.936332)mrcaott248ott1191:16.990343)mrcaott248ott320:5.599318,(((((19:22.089228,((20:10.386921,21:10.386921):9.468975,22:19.855896):2.233332):4.759755,((((23:8.645168,24:8.645168,(25:6.210509,26:6.210509):2.43466):0.133136,27:8.778305):6.319431,28:15.097736):4.346645,29:19.444381):7.404602):19.294533,(30:21.142064,(31:14.890738,32:14.890738):6.251326):25.001452):48.739777,((33:22.08651,34:22.086511):5.312451,((35:0.24173,36:0.24173):23.283756,37:23.525486):3.873476):67.484331):8.693903,38:103.577196)Ericales.rn.d8s.tre:8.763533)mrcaott248ott650:2.225571,39:114.5663)mrcaott248ott27233:5.307934,40:119.874233)mrcaott248ott557:3.860003,(((((41:112.701196,((((42:84.30543,43:84.30543,44:84.30543,(45:63.269486,46:63.269486):21.035945):10.255749,((47:49.606202,(48:11.019369,49:11.019369):38.586834):1.127065,(50:23.318947,51:23.318947):27.414321):43.827912):4.400616,52:98.961796)Rosales.rn.d8s.tre:12.186212,((((53:32.049298,54:32.049298):32.8096,(55:44.126227,(56:39.647898,((57:2.979117,58:2.979117):33.566959,59:36.546076):3.101822):4.47833):20.73267):25.790132,(60:1.018474,61:1.018474):89.630556):7.230533,(((62:11.776699,(63:4.435991,64:4.435991):7.340708):0.532457,65:12.309156):27.922252,66:40.231407):57.648155):13.268445)mrcaott371ott2511:1.553188)mrcaott371ott579:3.084369,(((67:14.937105,68:14.937106):96.489321,69:111.426427)mrcaott2ott345:0.594159,70:112.020586)mrcaott2ott1479:3.764979)mrcaott2ott371:2.793039,(((71:14.095456,72:14.095456,(73:13.331259,74:13.331259):0.764198):65.822884,(75:7.839096,76:7.839096):72.079245):37.074855,(77:109.689716,78:109.689716)mrcaott607ott1276:7.30348)mrcaott96ott607:1.585408)mrcaott2ott96:2.70865,(79:49.830613,80:49.830613):71.456641)mrcaott2ott8384:1.117838,(81:107.899492,82:107.899492):14.5056)mrcaott2ott2464:1.329145)Pentapetalae:7.946463,(((83:19.232421,(84:12.034304,85:12.034304):7.198117):24.31223,86:43.544651):36.738406,87:80.283057):51.397643)eudicotyledons:4.077365,(((((88:59.746904,89:59.746905):49.211832,(90:9.529609,(91:3.977792,92:3.977792):5.551817):99.429128)Asparagales.rn.d8s.tre:5.641826,((93:39.751078,((((94:19.529615,95:19.529616):4.03786,96:23.567476):0.282466,97:23.849942):5.935592,(98:0.742552,99:0.742552):29.042982):9.965544):54.070429,(100:6.698533,101:6.698533,102:6.698533,103:6.698533,((104:3.533928,105:3.533928):0.41641,(106:3.685714,107:3.685714):0.264624):2.748196):87.122973):20.779056)mrcaott121ott334:2.276244,((108:46.594385,(109:22.395922,110:22.395922):24.198464):41.313736,(111:84.185252,112:84.185252):3.72287):28.968685)mrcaott121ott1439:13.921952,113:130.798759)mrcaott121ott290:4.959306)mrcaott2ott121:189.291963,(((114:20.858866,115:20.858866):14.157556,116:35.016422):6.679156,117:41.695578):283.35445)Spermatophyta:65.652512,((((((118:26.00394,(119:12.342006,120:12.342006):13.661935):14.955239,121:40.959181):36.823494,((122:38.876793,(123:34.416472,124:34.416473):4.460319):7.803647,(125:3.868259,126:3.868259,127:3.86826):42.812179):31.102235):26.436691,(128:69.218922,129:69.218921):35.000443):135.063138,(130:145.750267,131:145.750267):93.532235):90.710824,132:329.993326):60.709213):10.085116,(133:86.352323,134:86.352323,(135:55.509087,136:55.509088):30.843237):314.435332);
+END;
