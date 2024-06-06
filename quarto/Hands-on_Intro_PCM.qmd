@@ -46,7 +46,7 @@ To clone the repository, you just need (**example for Mac**) to follow the next 
 
 4. Type the following command 
 
-4.1. git clone https://github.com/jesusNPL/MLM_intro.git
+4.1. git clone https://github.com/jesusNPL/ASCEND_2024.git
 
 This command will clone the full repository in the folder you selected. That's it!
 
@@ -253,7 +253,7 @@ In any case, we need to standardize the species names in order to proceed with t
 
 To standardize the species names, you can use the steps described [HERE](https://github.com/jesusNPL/CDR_phyfunc/blob/main/R/0.CDR-LTR_taxonomic_resolution.R). 
 
-However, for simplicity we will use the **[Taxonomic Name Resolution Service (TNRS)](https://tnrs.biendata.org)** tool, that basically is a web interface that used the **Plants of the World** as a base source.
+However, for simplicity we will use the **[Taxonomic Name Resolution Service (TNRS)](https://tnrs.biendata.org)** tool, that basically is a web interface that use the **Plants of the World** as a base source.
 
 The only thing we need to do is to copy the scientific names and paste on the TNRS tool.
 
