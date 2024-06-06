@@ -58,7 +58,7 @@ For this lab, you will need to have a set of R packages to do this lab. Install 
 #| eval: true
 # Package vector names 
 packages <- c("tidyverse", "ape", "geiger", "ggnewscale", "knitr", 
-              "phytools", "neonUtilities", "devtools") 
+              "rotl", "phytools", "neonUtilities", "devtools") 
 
 ```
 
@@ -106,6 +106,7 @@ library(geiger)
 library(phytools)
 library(neonUtilities)
 library(V.PhyloMaker)
+library(rotl)
 
 ```
 
@@ -132,9 +133,49 @@ You can use the function **dir.create()** to get create a series of folders with
 
 # Part 1 - Obtain a phylogenetic tree
 
-## Prepare data
+## Get phylogenetic hypothesis from the Open Tree of Life
 
-### Download plant inventories data from NEON
+Using the R package {rotl} we can obtain a tree for a particular taxonomic group, e.g., Pines (genus Pinus). Note that a detailed example of how to get phylogenies from the **Open tree of Life** can be found [here](https://cran.r-project.org/web/packages/rotl/vignettes/rotl.html).
+
+```{r}
+#| eval: true
+
+# get Taxonomic ID
+pinus_id <- tnrs_match_names("Pinus")
+
+## Use taxonomic ID to get a phylogeny for Pines
+pinus_otl_tree <- tol_subtree(ott_id = ott_id(pinus_id))
+
+```
+
+Explore the results
+
+```{r}
+#| eval: true
+
+pinus_otl_tree 
+
+```
+```{r}
+#| eval: true
+
+plot(pinus_otl_tree, show.tip.label = FALSE)
+axisPhylo()
+
+```
+
+```{r}
+#| eval: true
+
+head(pinus_otl_tree$tip.label, 10)
+
+```
+
+## Get phylogenetic hypothesis from Megaphylogenies
+
+### Prepare data 
+
+#### Download plant inventories data from NEON
 
 We will download data of plant inventories directly from NEON and to do that we will use the **R** package {**neonUtilities**} and the function '*loadByProduct*'. Before proceed let's take a look at the core information required in this function. To do that you just can type **?loadByProduct** in your console and the documentation for this function will appear in the Help window of RStudio.
 
@@ -238,7 +279,7 @@ head(HARV, 10)
 
 ```
 
-## Check taxonomy
+### Check taxonomy
 
 The data corresponding to NEON site HARV for the 2022 contains 1220 rows or observations and 17 columns or variables. If we look at the data, specifically to the column __scientificName__ we can see that the taxonomy used in NEON correspond to the taxonomy used by the [USDA](https://plants.sc.egov.usda.gov/classification.html), however this taxonomy is not necessarily used by scholars (🤔😵🫣). We generally rely for example on the taxonomy of the APG [Angiosperm Phylogeny Group](http://www.mobot.org/MOBOT/research/APweb/) for Angiosperms and WCSP [World Checklist of Conifers](http://wcsp.science.kew.org/prepareChecklist.do?checklist=selected_families%40%40080210320211453826) for Gymnosperms. More recently the initiative [**Plants of the World**](https://powo.science.kew.org) was launched and as today is the most reliable source to check the taxonomic names of plant species. 
 
@@ -336,11 +377,11 @@ head(HARV_data)
 
 ```
 
-## Get phylogenetic hypothesis
+### Get phylogenetic hypothesis 
 
 Alright, until here we have downloaded, cleaned and prepared plant community data for the NEON site HARV. The next step is to prepare the phylogeny for those communities or a community level phylogeny. To do that we will use the most up to date phylogeny of vascular plants [Constructing a broadly inclusive seed plant phylogeny](https://bsapubs.onlinelibrary.wiley.com/doi/full/10.1002/ajb2.1019) and the R package {**V.PhyloMaker**}.
 
-### Get taxonomic table
+#### Get taxonomic table
 
 ```{r}
 #| eval: true
@@ -354,7 +395,7 @@ head(sppPhylo, 10)
 
 ```
 
-### Get phylogeny 
+#### Get phylogeny 
 
 Prepare the phylogeny and plot it.
 
@@ -648,13 +689,20 @@ It is good practice to check the distribution of your data before doing downstre
 ```{r}
 #| eval: true
 
-hist(wl400)
+nimbiosData %>% 
+  ggplot(aes(x = `400`)) + 
+  geom_histogram() + 
+  xlab("Wavelenght 400") + 
+  theme_minimal() + 
+  theme(
+    axis.text = element_text(size = 17, colour = "black"),
+    axis.title = element_text(size = 20), 
+  )
 
 ```
 
 When we work with comparative data we start exploring different sets of evolutionary models. The most common is the model of character evolution, called **Brownian Motion** model. This model assumes that a trait evolves from a starting state (**z0**) according to a random walk with the variance specified by the rate parameter $\sigma^{2}$ (**sigma-squared**). In short, Brownian motion describes a process in which tip states are modeled under the assumption of a multivariate normal distribution. On a phylogeny, the multivariate mean of tip states is equal to the root state estimate, and variance accumulates linearly through time.
 
-*What does Brownian Motion evolution of hand-wing index in Furnariides look like?*
 
 ```{r}
 #| eval: true
@@ -666,7 +714,7 @@ brownianModel # this will show you the fit statistics and parameter values
 
 ```
 
-Here, you can see the estimates for ancestral state (z0), and the rate parameter ($\sigma^{2}$), as well as some measures of model fit. The fit of the model is determined using maximum likelihood, and expressed as a log likelihood **(lnL)**. The higher the **lnL**, the more probable the data given the model. However, when comparing different models, we can't use the **lnL**, because it does not account for the difference in the number of parameters among models. Models with more parameters will always fit better, but do they fit significantly better? For example an OU model has 4 parameters (alpha \[$\alpha$\], theta \[$\theta$\], z0, and sigma-squared \[$\sigma^{2}$\]), so it should fit better than a BM model, which includes only z0 and sigsq. To account for this, statisticians have developed another measure of fit called the AIC (Akaike Information Criterion): **AIC = (2xN)-2xlnL**, where **N** is the number of parameters. This penalizes the likelihood score for adding parameters. When selecting among a set of models, the one with the lowest AIC is preferred. We will use this information later on in this lab.
+Here, you can see the estimates for ancestral state (z0), and the rate parameter ($\sigma^{2}$), as well as some measures of model fit. The fit of the model is determined using maximum likelihood, and expressed as a log likelihood **(lnL)**. The higher the **lnL**, the more probable the data given the model. However, when comparing different models, we can't use the **lnL**, because it does not account for the difference in the number of parameters among models. Models with more parameters will always fit better, but do they fit significantly better? For example, an OU model has 4 parameters (alpha \[$\alpha$\], theta \[$\theta$\], z0, and sigma-squared \[$\sigma^{2}$\]), so it should fit better than a BM model, which includes only z0 and sigsq. To account for this, statisticians have developed another measure of fit called the AIC (Akaike Information Criterion): **AIC = (2xN)-2xlnL**, where **N** is the number of parameters. This penalizes the likelihood score for adding parameters. When selecting among a set of models, the one with the lowest AIC is preferred. We will use this information later on in this lab.
 
 In addition to assessing model fit, we can use the Brownian Motion model to reconstruct ancestral states of a character on a tree. To visualize what BM evolution of this trait looks like on a tree. The *contMap()* command in {phytools} estimates the ancestral states and plots them on a tree.
 
@@ -694,7 +742,7 @@ plot(obj,
 
 ## Model Fitting
 
-Brownian Motion is only one model of evolution for a continuous variable. Another model is the **Ornstein-Uhlenbeck (OU)** model, which allows the trait mean to evolve towards a new state (theta), with a selective force (alpha). These two new parameters, plus the starting state (z0) and the rate of evolution (sigsq) parameters from the BM model, make for a 4-parameter model. The **Early Burst (EB)** model allows the rate of evolution to change across the tree, where the early rate of evolution is high and declines over time (presumably as niches are filled during an adaptive radiation. The rate of evolution changes exponentially over time and is specified under the model r\[t\] = r\[0\] x exp(a x t), where r\[0\] is the initial rate, a is the rate change parameter, and t is time. The maximum bound is set to -0.000001, representing a decelerating rate of evolution. The minimum bound is set to $log(10^{-5})$/depth of the tree.
+Brownian Motion is only one model of evolution for a continuous variable. Another model is the **Ornstein-Uhlenbeck (OU)** model, which allows the trait mean to evolve towards a new state (theta \[$\theta$\]), with a selective force (alpha \[$\alpha$\]). These two new parameters, plus the starting state (z0) and the rate of evolution (sigsq \[$\sigma^{2}$\]) parameters from the BM model, make for a 4-parameter model. The **Early Burst (EB)** model allows the rate of evolution to change across the tree, where the early rate of evolution is high and declines over time (presumably as niches are filled during an adaptive radiation. The rate of evolution changes exponentially over time and is specified under the model r\[t\] = r\[0\] x exp(a x t), where r\[0\] is the initial rate, a is the rate change parameter, and t is time. The maximum bound is set to -0.000001, representing a decelerating rate of evolution. The minimum bound is set to $log(10^{-5})$/depth of the tree.
 
 Let’s evaluate the relative fit of these three models to the Hand-wing index trait.
 
