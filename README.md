@@ -1,2 +1,2 @@
-# ASCEND_2024
+# ASCEND summer training 2024
  
