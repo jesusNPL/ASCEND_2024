@@ -28,9 +28,9 @@ In this exercise, you will learn basic tools in R for visualizing phylogenies, t
 
 You will need two datasets, that will be provided for you:
 
-1.  A data.frame with species and mean spectra values -- **NEON_airborne_spectra_CLEAN_NAS.csv**
+1.  A data.frame with species and mean spectra values -- **NIMBioS_spectra_sample.csv**
 
-2.  A phylogenetic tree -- **phylo_ALL_NEON_S3.nex**
+2.  A phylogenetic tree -- **NIMBioS_phylogeny.nex**
 
 # Clone the repository
 
@@ -57,7 +57,7 @@ For this lab, you will need to have a set of R packages to do this lab. Install 
 ```{r}
 #| eval: true
 # Package vector names 
-packages <- c("tidyverse", "ape", "geiger", "ggnewscale", 
+packages <- c("tidyverse", "ape", "geiger", "ggnewscale", "knitr", 
               "phytools", "neonUtilities", "devtools") 
 
 ```
@@ -103,10 +103,10 @@ Load installed packages:
 library(tidyverse)
 library(ape)
 library(geiger)
-library(nlme)
 library(phytools)
 library(neonUtilities)
 library(V.PhyloMaker)
+
 ```
 
 Set up a working directory. Tell R that this is the directory you will be using, and read in your data:
@@ -439,11 +439,11 @@ Load the data. Instead of reading files from the computer we will pull the requi
 #| eval: true
 
 ## Trait data
-neonData <- read_csv("../data/NEON_airborne_spectra_CLEAN_NAS.csv") %>% 
+nimbiosData <- read_csv("../data/NIMBios_spectra_sample.csv") %>% 
   column_to_rownames("species")
 
 ## Phylogenetic data
-neonTree <- read.nexus("../data/phylo_ALL_NEON_S3.nex")
+nimbiosTree <- read.nexus("../data/NIMBioS_phylogeny.nex")
 
 ```
 
@@ -460,7 +460,7 @@ Let's inspect the data first, you can use the function **"glimpse()"** of the R 
 ```{r}
 #| eval: true
 
-neonData[1:10, 1:5]
+nimbiosData[1:10, 1:5]
 
 ```
 
@@ -469,19 +469,24 @@ Let's check if our trait data contain the same species as the phylogeny
 ```{r}
 #| eval: true
 
-tmp <- name.check(phy = neonTree, data = neonData)
+tmp <- name.check(phy = nimbiosTree, data = nimbiosData)
 
 # print the results
 head(tmp$tree_not_data, 10)
 
+tmp$data_not_tree
+
 ```
 
-It indicates that over 3500 species are not present in the spectra data, so let's drop these species from the phylogeny. To do that we will use the function **drop.tip()** of the package **{ape}**
+It indicates that over 408 species are not present in the spectra data, so let's drop these species from the phylogeny. To do that we will use the function **drop.tip()** of the package **{ape}**
 
 ```{r}
 #| eval: true
 
-neonTree <- drop.tip(phy = neonTree, tip = tmp$tree_not_data)
+nimbiosTree <- drop.tip(phy = nimbiosTree, tip = tmp$tree_not_data)
+
+# print resulting tree
+nimbiosTree
 
 ```
 
@@ -490,7 +495,7 @@ We can double check if our data match after dropping the missing species
 ```{r}
 #| eval: true
 
-name.check(phy = neonTree, data = neonData)
+name.check(phy = nimbiosTree, data = nimbiosData)
 
 ```
 
@@ -505,7 +510,7 @@ Let’s start by looking at the phylogeny of these birds and learning a bit abou
 ```{r}
 #| eval: true
 
-plot(ladderize(neonTree))
+plot(ladderize(nimbiosTree))
 
 axisPhylo()
 
@@ -516,7 +521,7 @@ Whoa. That's ugly. Let's clean it up.
 ```{r}
 #| eval: true
 
-plot.phylo(ladderize(neonTree), 
+plot.phylo(ladderize(nimbiosTree), 
            no.margin = TRUE, 
            cex = 0.5)
 
@@ -529,7 +534,7 @@ Better. You can mess around with tree plotting functions in **plot.phylo()** as 
 ```{r}
 #| eval: true
 
-plot.phylo(neonTree, 
+plot.phylo(nimbiosTree, 
            type = "fan", 
            no.margin = TRUE, 
            cex = 0.5)
@@ -543,7 +548,7 @@ It may be useful to understand how trees are encoded in R. Typing in just the na
 ```{r}
 #| eval: true
 
-neonTree
+nimbiosTree
 
 ```
 
@@ -552,7 +557,7 @@ that will give you basic information about the phylogeny: the number of tips and
 ```{r}
 #| eval: true
 
-str(neonTree)
+str(nimbiosTree)
 
 ```
 
@@ -561,7 +566,7 @@ will tell you more about tree structure. Trees consist of tips connected by edge
 ```{r}
 #| eval: true
 
-neonTree$tip.label
+nimbiosTree$tip.label
 
 ```
 
@@ -570,7 +575,7 @@ gives you a list of all your terminal taxa, which are by default numbered 1-n, w
 ```{r}
 #| eval: true
 
-neonTree$Nnode
+nimbiosTree$Nnode
 
 ```
 
@@ -579,7 +584,7 @@ gives you the number of nodes. This is a fully bifurcating rooted tree, so it ha
 ```{r}
 #| eval: true
 
-head(neonTree$edge, 10)
+head(nimbiosTree$edge, 10)
 
 ```
 
@@ -590,7 +595,7 @@ Put that all together with the following lines
 ```{r}
 #| eval: true
 
-plot.phylo(neonTree, 
+plot.phylo(nimbiosTree, 
            type = "fan", 
            no.margin = TRUE, 
            cex = 0.5, 
@@ -607,17 +612,17 @@ There are many ways to manipulate trees in R using **{ape}**, **{Phytools}**, an
 
 ## Working with a data matrix and testing hypotheses in a phylogenetically informed way
 
-Let's ask some questions using the spectra data that were extracted from NEON. First, explore the data in the "neonData" matrix. Here are some options for visualizing data matrices:
+Let's ask some questions using the spectra data that were extracted from NEON. First, explore the data in the "nimbiosData" matrix. Here are some options for visualizing data matrices:
 
 ```{r}
 #| eval: true
 
-#neonData # this will show you the first few rows of your data matrix and its header
+#nimbiosData # this will show you the first few rows of your data matrix and its header
 
-neonData %>% 
+nimbiosData %>% 
   dimnames() # this will show you the row and column headers for your matrix
 
-#neonData %>% 
+#nimbiosData %>% 
  # View() # this will let you visualize the entire matrix
 
 ```
@@ -627,8 +632,8 @@ Hyperspectral data is composed of hundreds of bands let's isolate a single band 
 ```{r}
 #| eval: true
 
-wl402 <- neonData[, "402"] 
-names(wl402) <- rownames(neonData) 
+wl400 <- nimbiosData[, "400"] 
+names(wl400) <- rownames(nimbiosData) 
 # data vectors have to be labelled with tip names for the associated tree. 
 # This is how to do that. 
 
@@ -643,7 +648,7 @@ It is good practice to check the distribution of your data before doing downstre
 ```{r}
 #| eval: true
 
-hist(wl402)
+hist(wl400)
 
 ```
 
@@ -654,8 +659,8 @@ When we work with comparative data we start exploring different sets of evolutio
 ```{r}
 #| eval: true
 
-brownianModel <- fitContinuous(phy = neonTree, 
-                               dat = wl402)
+brownianModel <- fitContinuous(phy = nimbiosTree, 
+                               dat = wl400)
 
 brownianModel # this will show you the fit statistics and parameter values
 
@@ -669,8 +674,8 @@ In addition to assessing model fit, we can use the Brownian Motion model to reco
 #| eval: true
 
 ## Calculate number of trait shifts
-obj <- contMap(neonTree, 
-        wl402, 
+obj <- contMap(nimbiosTree, 
+        wl400, 
         fsize = 0.1, 
         lwd = 1.5, 
         type = "fan", 
@@ -698,8 +703,8 @@ Let’s evaluate the relative fit of these three models to the Hand-wing index t
 ```{r}
 #| eval: true
 
-brownianModel <- fitContinuous(phy = neonTree, 
-                               dat = wl402, # trait 
+brownianModel <- fitContinuous(phy = nimbiosTree, 
+                               dat = wl400, # trait 
                                model = "BM") # evolutionary model
 
 ```
@@ -709,8 +714,8 @@ brownianModel <- fitContinuous(phy = neonTree,
 ```{r}
 #| eval: true
 
-OUModel <- fitContinuous(phy = neonTree, 
-                               dat = wl402, 
+OUModel <- fitContinuous(phy = nimbiosTree, 
+                               dat = wl400, 
                          model = "OU")
 
 ```
@@ -720,8 +725,8 @@ OUModel <- fitContinuous(phy = neonTree,
 ```{r}
 #| eval: true
 
-EBModel <- fitContinuous(phy = neonTree, 
-                         dat = wl402, 
+EBModel <- fitContinuous(phy = nimbiosTree, 
+                         dat = wl400, 
                          model = "EB")
 
 ```
@@ -762,12 +767,12 @@ According to the model comparison using AIC, the model that best fits the data i
 
 library(knitr)
 
-aic_wl402 <- aicw(mods) 
-names(aic_wl402)[1] <- "AIC"
+aic_wl400 <- aicw(mods) 
+names(aic_wl400)[1] <- "AIC"
 
-aic_wl402$lnL <- c(brownianModel$opt$lnL, OUModel$opt$lnL, EBModel$opt$lnL)
+aic_wl400$lnL <- c(brownianModel$opt$lnL, OUModel$opt$lnL, EBModel$opt$lnL)
 
-kable(aic_wl402)
+kable(aic_wl400)
 
 ```
 
@@ -783,13 +788,13 @@ Blomberg’s K compares the variance of **PICs** to what we would expect under a
 #| eval: true
 
 # Run Blomber's K
-K_wl402 <- phylosig(tree = neonTree, # Phylogeny
-                  x = wl402, # trait
+K_wl400 <- phylosig(tree = nimbiosTree, # Phylogeny
+                  x = wl400, # trait
                   method = "K", # method
                   test = TRUE)
 
 # Print results
-print(K_wl402)
+print(K_wl400)
 
 ```
 
@@ -797,7 +802,7 @@ print(K_wl402)
 #| eval: true
 
 # Plot results
-plot(K_wl402)
+plot(K_wl400)
 
 ```
 
@@ -809,20 +814,20 @@ Pagel’s $\lambda$ is a tree transformation that stretches the tip branches rel
 #| eval: true
 
 # Run Pagel's Lambda
-LB_wl402 <- phylosig(tree = neonTree, # Phylogeny
-                  x = wl402, # trait
+LB_wl400 <- phylosig(tree = nimbiosTree, # Phylogeny
+                  x = wl400, # trait
                   method = "lambda", 
                   test = TRUE)
 
 # Print the results
-print(LB_wl402)
+print(LB_wl400)
 
 # Plot thre results
-plot(LB_wl402)
+plot(LB_wl400)
 
 ```
 
-Wavelength 402 presents a low phylogenetic signal according to both metrics. Pagel's $\lambda$ = 0.27. Blomberg's K = 0.05 suggests that wavelength 402 presents phylogenetic signal but not as expected under the BM model of evolution. **Importantly**, both metrics deviate from the white noise null model.
+Wavelength 402 presents a low phylogenetic signal according to both metrics. Pagel's $\lambda$ = 0.8. Blomberg's K = 0.13 suggests that wavelength 402 presents phylogenetic signal but not as expected under the BM model of evolution. **Importantly**, both metrics deviate from the white noise null model.
 
 ## Phylogenetic signal for all wavelengths
 
@@ -832,10 +837,10 @@ Double check the match between the spectra data and the phylogeny
 #| eval: true
 
 ### Check info
-setdiff(neonTree$tip.label, rownames(neonData))
+setdiff(nimbiosTree$tip.label, rownames(nimbiosData))
 
 ### Assign rownames to column
-neonData <- neonData %>% 
+nimbiosData <- nimbiosData %>% 
   rownames_to_column("species")
 
 ```
@@ -850,8 +855,8 @@ Now we will use a wrapper function to run multiple wavelenghts, but for the sake
 source("https://raw.githubusercontent.com/jesusNPL/SpecEvolution/main/R/wrappers.R")
 
 # run only 10 bands
-NEON_HS_PhyloSig <- demon_K(spectra = neonData, # spectra in data.frame
-                            tree = neonTree, # phylogeny
+NIMBioS_PhyloSig <- demon_K(spectra = nimbiosData, # spectra in data.frame
+                            tree = nimbiosTree, # phylogeny
                             nSIM = 1000, # number of simulations
                             nBands = 10) # number of bands
 
@@ -863,7 +868,7 @@ Explore the results
 ```{r}
 #| eval: true
 
-glimpse(NEON_HS_PhyloSig)
+glimpse(NIMBioS_PhyloSig)
 
 ```
 
@@ -873,15 +878,33 @@ To finish this hands-on we can plot the spectra and Blomberg's K values. To do t
 #| eval: true
 
 ## Transform the long format
-NEON_HS_long <- neonData %>% 
+NIMBioS_spectra_long <- nimbiosData %>% 
   pivot_longer(!species, 
                names_to = "wavelength", 
                values_to = "reflectance") 
 
-## Load phylogenetic signal
-NEON_HS_PhyloSig <- read_csv("../output/NEON_K_phylosig_CLEAN.csv")
+glimpse(NIMBioS_spectra_long)
 
 ```
+
+Prepare Phylogenetic signal results for plotting
+
+```{r}
+#| eval: true
+
+## Load phylogenetic signal
+NIMBioS_PhyloSig <- read_csv("../output/NIMBios_K_phylosig.csv")
+
+NIMBioS_PhyloSig <- NIMBioS_PhyloSig %>% 
+  mutate(Pval_cat = if_else(K_pval <= 0.05, "diff", "no_diff")) %>% 
+  mutate(wavelength = Band) %>% 
+  mutate(species = Pval_cat) %>% 
+  select(Band, wavelength, Pval_cat, species, everything()) %>% 
+# Rename P-Values column to "species" to match column in the spectra (only for plot).
+  mutate(extra_y = 0.15, "Blomberg's K" = K_obs) 
+
+```
+
 
 Plot the results
 
@@ -891,7 +914,7 @@ Plot the results
 ### Plot mean species and Blomberg's K values
 library(ggnewscale)
 
-p_ps_K <- NEON_HS_long %>% 
+p_ps_K <- NIMBioS_spectra_long %>% 
   ggplot(aes(x = as.numeric(wavelength), 
              y = reflectance, 
              colour = factor(species)
@@ -901,11 +924,11 @@ p_ps_K <- NEON_HS_long %>%
   # add a new scale color
   new_scale_color() + 
   # plot phylogenetic signal 
-  geom_point(aes(x = as.numeric(WL_num), 
+  geom_point(aes(x = wavelength, 
                  y = extra_y, 
                  color = species, 
                  size = `Blomberg's K`), # Pval_cat = species
-             data = NEON_HS_PhyloSig , 
+             data = NIMBioS_PhyloSig, 
              inherit.aes = FALSE) + 
   scale_color_manual(name = "P-value", 
                      labels = c("< 0.05", "> 0.05"), 
@@ -955,7 +978,7 @@ Save the figure in our output folder
 #| eval: true
 
 ### Save results
-pdf(file = "../output/Fig_NEON_HS_phyloSignal.pdf", 
+pdf(file = "../output/Fig_NIMBioS_K_phyloSignal.pdf", 
     height = 7, width = 10)
 
 p_ps_K
